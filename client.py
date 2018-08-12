@@ -1,35 +1,28 @@
 import socket
-import json
+import utils
+import jim
+import argparse
 
-import time
+parser = argparse.ArgumentParser("My client parser")
 
-def get_user(name, status):
-    return {
-        "account_name": name,
-        "status": status
-    }
+parser.add_argument("host", type=str, help="Host of server")
+parser.add_argument("port", type=int, help="Port of server")
+parser.add_argument("mode", type=str, help="Mode type of client")
 
+args = parser.parse_args()
 
-def get_presence_message(user):
-    return {
+with utils.create_tcp_client(args.host, args.port) as s:
 
-        "action": "presence",
-        "time": time.time(),
-        "user": user
-    }
+    if args.mode == "r":
+        print("Enter in read socket")
 
-def format_message(dict_message):
-    return json.dumps(dict_message).encode("utf-8")
+        while True:
+            msg = s.recv(1024)
+            print(utils.convert_bytes_to_str(msg))
+    else:
+        print("Enter in write socket")
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        user = input("Input user: ")
+        status = input("Input status: ")
+        s.send(utils.convert_str_to_bytes(jim.get_presence_message(user, status)))
 
-sock.connect(('localhost', 7777))
-
-user = input("Input username: ")
-status = input("Input status: ")
-
-sock.send(format_message(get_presence_message(get_user(user, status))))
-data_encode = sock.recv(1024)
-print(data_encode.decode("utf-8"))
-
-sock.close()
